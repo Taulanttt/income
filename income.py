@@ -3,7 +3,7 @@ from datetime import date
 import streamlit as st
 import pandas as pd
 
-cnx = mysql.connector.connect(host='127.0.0.1',user='root',password='sHj@6378#jw',database="finances")
+cnx = mysql.connector.connect(host='127.0.0.1',user='root',password='6969',database="finances")
 
 
 cursor = cnx.cursor()
@@ -11,8 +11,9 @@ cursor = cnx.cursor()
 # cursor.execute('CREATE DATABASE finances')
 cursor.execute("USE finances")
 # cursor.execute("CREATE TABLE daily_finances (id INT AUTO_INCREMENT PRIMARY KEY,date DATE,income FLOAT,expense FLOAT,comment TEXT)")
+# cursor.execute("ALTER TABLE daily_finances MODIFY COLUMN income DECIMAL(18,2), MODIFY COLUMN expense DECIMAL(18,2);")
 
-
+cursor = cnx.cursor()
 
 
 
@@ -61,16 +62,32 @@ def display_data():
     else:
         df = pd.DataFrame(rows, columns=["ID", "Date", "Income", "Expense", "Comment"])
         df = df.set_index("ID")
-        st.dataframe(df)
 
+        # Convert "Income" and "Expense" columns to numeric types
+        df["Income"] = pd.to_numeric(df["Income"])
+        df["Expense"] = pd.to_numeric(df["Expense"])
+
+        # Calculate totals
         total_income = df["Income"].sum()
         total_expense = df["Expense"].sum()
         profit = total_income - total_expense
 
+        # Add totals as a new row
+        totals_row = pd.Series({"Date": "Totals", "Income": total_income, "Expense": total_expense, "Comment": ""})
+        df = df.append(totals_row, ignore_index=True)
+
+        # Format "Income" and "Expense" columns to display just two decimal places
+        df["Income"] = df["Income"].map("{:.2f}".format)
+        df["Expense"] = df["Expense"].map("{:.2f}".format)
+
+        # Modify the "Comment" column for the last row
+        profit_formatted = "{:.2f}".format(profit)
+        df.at[len(df) - 1, "Comment"] = f"Total Profit: {profit_formatted}"
+
+        st.table(df)
         st.write(f"Total income: {total_income:.2f}")
         st.write(f"Total expense: {total_expense:.2f}")
-        st.write(f"Profit: {profit:.2f}")
-
+        st.write(f"Profit: {profit_formatted}")
 # Define Streamlit app
 def app():
     st.title("Daily Finances Tracker")
@@ -101,7 +118,7 @@ def login():
     username = st.text_input("Username:")
     password = st.text_input("Password:", type="password")
 
-    if username == "Skifter" and password == "Murati":
+    if username == "Taulant" and password == "Peci":
         app()
     elif username != "" and password != "":
         st.error("Invalid username or password.")
